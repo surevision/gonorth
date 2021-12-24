@@ -18,7 +18,7 @@ cc.Class({
 
     properties: {
         // 绑定对象
-        player: null,
+        player: cc.Node,
         balls: {
             type: [Ball],
             default: [],
@@ -35,7 +35,7 @@ cc.Class({
             type: [cc.Node],
             default: []
         },
-
+        touchNode: cc.Node,
         // 游戏阶段
         _state: STATES.IDLE,
 
@@ -56,6 +56,20 @@ cc.Class({
                 w._coll_type = "wall";
             }
         });
+        this.player._coll_type = "player";
+        // 控制杆    
+        this.touchNode.on(cc.Node.EventType.TOUCH_START, function (touch, event) {
+            // 返回世界坐标
+            let touchLoc = touch.getLocation();
+            // https://docs.cocos.com/creator/api/zh/classes/Intersection.html 检测辅助类
+            cc.log(touchLoc);
+            this.player.x = this.player.parent.convertToNodeSpaceAR(touchLoc).x;
+        }, this);
+        this.touchNode.on(cc.Node.EventType.TOUCH_MOVE, function (touch, event) {
+            // 返回世界坐标
+            let touchLoc = touch.getLocation();
+            this.player.x = this.player.parent.convertToNodeSpaceAR(touchLoc).x;
+        }, this);
     },
 
     start () {
