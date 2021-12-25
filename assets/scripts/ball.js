@@ -13,11 +13,10 @@ cc.Class({
     extends: cc.Component,
 
     properties: {
-        speed: 5,
+        speed: 500,
         direction: 0,
 
         _dir: cc.Vec2.ZERO,
-
         _state: STATES.ALIVE,
     },
 
@@ -26,8 +25,10 @@ cc.Class({
     onLoad () {
         this.collider = this.node.getComponent(cc.BoxCollider);
         this.node._type = "ball";
-
-        this._dir = cc.Vec2.ONE.normalize().rotate(this.direction * Math.PI / 360);
+        if (this._dir.equals(cc.Vec2.ZERO)) {
+            this._dir = cc.Vec2.RIGHT.rotate(this.direction * Math.PI / 180).normalize();
+            // cc.log(this._dir);
+        }
         this.moveDelta = 1.0 / 60;
     },
 
@@ -100,43 +101,60 @@ cc.Class({
             other.node._coll_type == "player" ||
             other.node._coll_type == "bottomWall") {
             
-            // 反弹
-            let a = self.world.preAabb;
-            let b = other.world.aabb;
-            // 回溯到重叠之前
-            // let dis = this._dir.mul(this.moveDelta * this.speed);
-            // while (a.intersects(b)) {
-            //     cc.log("rollback");
-            //     a.x -= dis.x;
-            //     a.y -= dis.y;
-            // }
-            if (this._dir.y > 0 && this.isBelow(a, b)) {
-                // 撞底部
-                // cc.log("below");
-                this._dir = cc.Vec2.RIGHT.rotate(2 * Math.PI - angle);
-            } else if (this._dir.y < 0 && this.isAbove(a, b)) {
-                // 撞顶部
-                // cc.log("above");
-                this._dir = cc.Vec2.RIGHT.rotate(2 * Math.PI - angle);
-            } else if (this._dir.x > 0 && this.isLeft(a, b)) {
-                // 撞左边
-                // cc.log("left");
-                this._dir = cc.Vec2.RIGHT.rotate(1 * Math.PI - angle);
-            } else if (this._dir.x < 0 && this.isRight(a, b)) {
-                // 撞右边
-                // cc.log("right");
-                this._dir = cc.Vec2.RIGHT.rotate(3 * Math.PI - angle);
+            if (other.node._coll_type == "brick" && 
+                cc.soulbaka.game.isOnFire()) {
+                // 火球不反弹
+            } else {
+                // 反弹
+                let a = self.world.preAabb;
+                let b = other.world.aabb;
+                // 回溯到重叠之前
+                // let dis = this._dir.mul(this.moveDelta * this.speed);
+                // while (a.intersects(b)) {
+                //     cc.log("rollback");
+                //     a.x -= dis.x;
+                //     a.y -= dis.y;
+                // }
+                if (this._dir.y > 0 && this.isBelow(a, b)) {
+                    // 撞底部
+                    // cc.log("below");
+                    this._dir = cc.Vec2.RIGHT.rotate(2 * Math.PI - angle);
+                } else if (this._dir.y < 0 && this.isAbove(a, b)) {
+                    // 撞顶部
+                    // cc.log("above");
+                    this._dir = cc.Vec2.RIGHT.rotate(2 * Math.PI - angle);
+                } else if (this._dir.x > 0 && this.isLeft(a, b)) {
+                    // 撞左边
+                    // cc.log("left");
+                    this._dir = cc.Vec2.RIGHT.rotate(1 * Math.PI - angle);
+                } else if (this._dir.x < 0 && this.isRight(a, b)) {
+                    // 撞右边
+                    // cc.log("right");
+                    this._dir = cc.Vec2.RIGHT.rotate(3 * Math.PI - angle);
+                }
+                // 偏移
+                if (other.node._coll_type == "player") {
+                    this._dir = this._dir.rotate(
+                        (Math.random() > 0.5 ? 1 : -1) * Math.random() * 35 * Math.PI / 360);
+                }
             }
-            // 偏移
-            this._dir = this._dir.rotate(Math.PI / 20);
         }
         if (other.node._coll_type == "bottomWall") {
             // 死亡 
-            
+            this._state = STATES.DEAD;
+            cc.soulbaka.game.checkWinLose();
+            this.node.active = false;
         }
-
+        // 生成奖励
+        if (other.node._coll_type == "brick" &&
+            (other.node._data == "1" || (Math.random() < 0.1 && other.node._data == "0"))) {
+            
+            cc.soulbaka.game.generateItem(other.node.x, other.node.y);
+        }
+        // 隐藏砖块
         if (other.node._coll_type == "brick") {
             other.node.active = false;
+            cc.soulbaka.game.checkWinLose();
         }
     },
     /**
