@@ -45,17 +45,11 @@ cc.Class({
     },
 
     setup(x, y, type) {
-        let Width = 28;
-        let Height = 28;
         this.node.x = x;
         this.node.y = y;
         this.node.group = "drop";
-        this.node.width = Width;
-        this.node.height = Height;
         this._type = type;
         let collider = this.node.addComponent(cc.BoxCollider);
-        collider.size.width = Width;
-        collider.size.height = Height;
     },
 
     move() {

@@ -140,12 +140,17 @@ cc.Class({
         this._fireballTime += 10;
         cc.find("buffs/fire/img", this.uiNode).stopAllActions();
         cc.find("buffs/fire/img", this.uiNode).runAction(cc.sequence(
-            cc.scaleTo(0.3, 2, 2),
-            cc.scaleTo(0.3, 1, 1)
+            cc.scaleTo(0.16, 2, 2),
+            cc.scaleTo(0.16, 1, 1)
         ));
         if (lastTime <= 0) {
             // 补充火焰特效
             cc.find("buffs/fire", this.uiNode).active = true;
+            this.balls.forEach(ball => {
+                if (ball.isAlive()) {
+                    cc.find("fire", ball.node).active = true;
+                }
+            })
         }
     },
 
@@ -204,6 +209,10 @@ cc.Class({
             }
             ball._state = "ALIVE"; // fixme 需要解耦
             ball.node.active = true;
+            // 火焰特效
+            if (this.isOnFire()) {
+                cc.find("fire", ball.node).active = true;
+            }
         });
     },
 
@@ -223,8 +232,8 @@ cc.Class({
         this._speedballTime += 10;
         cc.find("buffs/windy/img", this.uiNode).stopAllActions();
         cc.find("buffs/windy/img", this.uiNode).runAction(cc.sequence(
-            cc.scaleTo(0.3, 2, 2),
-            cc.scaleTo(0.3, 1, 1)
+            cc.scaleTo(0.16, 2, 2),
+            cc.scaleTo(0.16, 1, 1)
         ))
         if (lastTime <= 0) {
             // 补充疾速特效
@@ -244,7 +253,7 @@ cc.Class({
             if (this._showScore > this._score) {
                 this._showScore = this._score;
             }
-            cc.find("score/coin/data", this.uiNode).getComponent(cc.Label).string = this._showScore;
+            cc.find("score/data", this.uiNode).getComponent(cc.Label).string = this._showScore;
         }
         // buff 效果刷新时间
         if (this._fireballTime > 0 && this._state == STATES.RUNNING) {
@@ -255,6 +264,11 @@ cc.Class({
                 this._fireballTime = 0; // 直接用这个变量判断球是否无敌
                 // 去掉动画
                 cc.find("buffs/fire", this.uiNode).active = false;
+                this.balls.forEach(ball => {
+                    if (ball.isAlive()) {
+                        cc.find("fire", ball.node).active = false;
+                    }
+                })
             }
         }
         if (this._speedballTime > 0 && this._state == STATES.RUNNING) {
@@ -303,10 +317,15 @@ cc.Class({
         dropNode.stopAllActions();
         dropNode.runAction(cc.sequence(
             cc.fadeTo(0.1, 255),
-            cc.jumpTo(0.5, pos, 24, 1),
-            cc.bezierTo(0.7, [cc.v2(40,40),cc.v2(60,60), cc.find("score", this.uiNode).position, ]),
+            // cc.jumpTo(0.5, pos, 44, 1),
+            cc.bezierTo(0.7, [cc.v2(pos.x,pos.y + 80),cc.v2(pos.x,pos.y - 200), cc.find("score", this.uiNode).position, ]),
             cc.fadeTo(0.05, 0),
             cc.callFunc(function() {
+                cc.find("score/coin", this.uiNode).stopAllActions();
+                cc.find("score/coin", this.uiNode).runAction(cc.sequence(
+                    cc.scaleTo(0.16, 2, 2),
+                    cc.scaleTo(0.16, 1, 1)
+                ))
                 dropNode.destroy();
             }.bind(this))
         ))
@@ -360,9 +379,9 @@ cc.Class({
         //     return;
         // }
         let Width = 48;
-        let Height = 36;
-        let offset = 4;
-        let x = index * (Width + offset) - (Width + offset) * 10 / 2 + Width / 2;
+        let Height = 48;
+        let offset = 1;
+        let x = index * (Width + offset) - (Width + offset) * 12 / 2 + Width / 2;
         let y = -lineNum * (Height + offset) - 36 + this.walls[2].y;
 
         if (data == "0") {
