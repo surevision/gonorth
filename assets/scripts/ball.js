@@ -92,7 +92,6 @@ cc.Class({
         let preAabb = selfWorld.preAabb;
         // 自身运动方向角度
         let angle = cc.Vec2.RIGHT.signAngle(this._dir);
-        let rAngle = angle * 180 / Math.PI;
         // cc.log(this._dir.x, this._dir.y);
         // cc.log(angle * 180 / Math.PI);
         // cc.log('on collision enter');
@@ -132,10 +131,22 @@ cc.Class({
                     // cc.log("right");
                     this._dir = cc.Vec2.RIGHT.rotate(3 * Math.PI - angle);
                 }
-                // 偏移
+                // 修正与偏移
                 if (other.node._coll_type == "player") {
-                    this._dir = this._dir.rotate(
-                        (Math.random() > 0.5 ? 1 : -1) * Math.random() * 35 * Math.PI / 360);
+                    let rAngle = cc.Vec2.RIGHT.signAngle(this._dir) * 180 / Math.PI;
+                    if (rAngle < 18 && rAngle > 0) {
+                        // 低斜率修正
+                        this._dir.rotateSelf(15 * Math.PI / 180);
+                        // console.log("0~18");
+                    } else if (rAngle < 180 && rAngle > 180 - 18) {
+                        // 低斜率修正
+                        this._dir.rotateSelf(-15 * Math.PI / 180);
+                        // console.log("-18~0");
+                    } else {
+                        // 正常情况随机偏移
+                        this._dir = this._dir.rotate(
+                            (Math.random() > 0.5 ? 1 : -1) * Math.random() * 25 * Math.PI / 180);
+                    }
                 }
             }
         }

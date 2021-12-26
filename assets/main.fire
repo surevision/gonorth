@@ -1383,7 +1383,7 @@
     },
     "_enabled": true,
     "speed": 700,
-    "direction": 45,
+    "direction": 40,
     "_dir": {
       "__type__": "cc.Vec2",
       "x": 0,
