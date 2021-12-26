@@ -41,10 +41,6 @@ cc.Class({
         // 全局变量初始化
         cc.soulbaka = cc.soulbaka || {};
         cc.soulbaka.main = this;
-        // 碰撞记录{objname_ballname: false}
-        cc.soulbaka.collision = {};
-        // 球命名累加计数
-        cc.soulbaka.ballIncrement = 0;
         // 帧计数
         this._frameCnt = 0;
         // 球速度比例

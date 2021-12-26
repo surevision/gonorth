@@ -45,6 +45,7 @@ cc.Class({
 
         _score: 0,
         _showScore: 0,
+        _lv: 1,
         // 游戏阶段
         _state: STATES.IDLE,
 
@@ -52,6 +53,11 @@ cc.Class({
         _fireballTime: 0,
         // 球加速时间
         _speedballTime: 0,
+
+        // 点击继续的回调
+        _clickCallback: null,
+        // 点击回调的参数
+        _clickData: null,
     },
 
     // LIFE-CYCLE CALLBACKS:
@@ -76,7 +82,7 @@ cc.Class({
                 this.player.x = this.player.parent.convertToNodeSpaceAR(touchLoc).x;
             }
             if (this._state == STATES.IDLE) {
-                this._state = STATES.RUNNING;
+                this.startGame();
             }
         }, this);
         this.touchNode.on(cc.Node.EventType.TOUCH_MOVE, function (touch, event) {
@@ -86,11 +92,67 @@ cc.Class({
                 this.player.x = this.player.parent.convertToNodeSpaceAR(touchLoc).x;
             }
         }, this);
+        this._state = STATES.IDLE;
+        this.resetGame();
     },
 
     start () {
+        this.showMenu("Go North!", "", "START", () => {
+            this.load(this._lv);
+            this.player.active = true;
+            this.balls[0].node.active = true;
+            cc.find("score", this.uiNode).active = true;
+        });
+    },
+
+    resetGame() {
+        this.player.x = 0;
+        this.player.y = -420;
+        this.player.width = 130;
+        this.player.getComponent(cc.BoxCollider).size.width = 130;
+
+        this.player.active = false;
+        this.balls.forEach((ball, index) => {
+            if (index == 0) {
+                ball.node.x = 0;
+                ball.node.y = -378;
+                ball.node.active = false;
+                ball._state = "ALIVE"; // fixme 解耦
+                ball._dir = cc.Vec2.RIGHT.rotate(
+                        (ball.direction + Math.random() * 20 * (Math.random() < 0.5 ? 1 : -1)) * Math.PI / 180).normalize();
+                cc.find("fire", ball.node).active = false;
+            } else {
+                ball.node.destroy();
+            }
+        });
+        this.balls = [this.balls[0]];
+        this.items.forEach(item => {
+            item.destroy();
+        });
+        this.items.length = 0;
+        this.drops.forEach(drop => {
+            drop.stopAllActions();
+            drop.destroy();
+        });
+        this.drops.length = 0;
+
+        cc.find("score", this.uiNode).active = false;
+
+        this._showScore = this._score;
+
+        cc.soulbaka.main.toNormalSpeed();
+        this._fireballTime = 0;
+        this._speedballTime = 0;
+        cc.find("buffs/fire", this.uiNode).active = false;
+        cc.find("buffs/windy", this.uiNode).active = false;
+    },
+
+    startGame() {
+        // 开始
+        this.player.active = true;
+        this.balls[0].node.active = true;
+        cc.find("score", this.uiNode).active = true;
         this._state = STATES.RUNNING;
-        this.load(2);
     },
     
     isRunning() {
@@ -286,10 +348,43 @@ cc.Class({
     checkWinLose() {
         if (this.balls.every(b=>!b.isAlive())) {
             this._state = STATES.LOSE;
+            this.showMenu("Go North!", "GAME OVER", "restart?", () => {
+                this._state = STATES.IDLE;
+                this.resetGame();
+                this._lv = 1;
+                this.load(this._lv);
+                // this.startGame();
+                this.player.active = true;
+                this.balls[0].node.active = true;
+                cc.find("score", this.uiNode).active = true;
+            });
             return;
         }
         if (this.bricks.every(b=>!b.active)) {
             this._state = STATES.WIN;
+            if (this._lv < 5) {
+                this.showMenu("Go North!", "YOU WIN", "next level", () => {
+                    this._state = STATES.IDLE;
+                    this.resetGame();
+                    this._lv += 1;
+                    this.load(this._lv);
+                    // this.startGame();
+                    this.player.active = true;
+                    this.balls[0].node.active = true;
+                    cc.find("score", this.uiNode).active = true;
+                });
+            } else {
+                this.showMenu("Go North!", "YOU WIN", "restart?", () => {
+                    this._state = STATES.IDLE;
+                    this.resetGame();
+                    this._lv = 1;
+                    this.load(this._lv);
+                    // this.startGame();
+                    this.player.active = true;
+                    this.balls[0].node.active = true;
+                    cc.find("score", this.uiNode).active = true;
+            });
+            }
             return;
         }
     },
@@ -348,8 +443,11 @@ cc.Class({
     },
 
     load(lv) {
-        this._state = STATES.IDLE;
         let path = `map/lv${Math.floor(lv)}`;
+        this.bricks.forEach(brick => {
+            brick.destroy();
+        })
+        this.bricks.length = 0;
         cc.resources.load(path, function (err, file) {
             cc.log(file.text);
             let lines = file.text.split('\n');
@@ -360,10 +458,6 @@ cc.Class({
                     this.generateByData(data, lineNum, index);
                 });
             });
-            this._score = 0;
-            this._showScore = 0;
-            // 开始
-            // this._state = STATES.RUNNING;
         }.bind(this));
     },
 
@@ -420,5 +514,37 @@ cc.Class({
             node.y = y;
             this.bricks.push(node);
         }
+    },
+
+    /**
+     * 展示菜单
+     * @param {*} title 
+     * @param {*} content 
+     * @param {*} choice 
+     * @param {*} func 
+     * @param {*} data 
+     */
+    showMenu(title, content, choice, func, data) {
+        cc.find("tips", this.uiNode).active = true;
+        cc.find("tips/title", this.uiNode).getComponent(cc.Label).string = title;
+        cc.find("tips/text", this.uiNode).getComponent(cc.Label).string = content;
+        cc.find("tips/choice/bg/text", this.uiNode).getComponent(cc.Label).string = choice;
+        this._clickCallback = func;
+        this._clickData = data;
+    },
+    /**
+     * 点击菜单按钮
+     * @param {*} event 
+     * @param {*} customData 
+     */
+    clickChoice(event, customData) {
+        if (this._clickCallback) {
+            this._clickCallback(this._clickData);
+            // 隐藏菜单
+            if (cc.isValid(this.uiNode) && cc.isValid(cc.find("tips", this.uiNode))) {
+                cc.find("tips", this.uiNode).active = false;
+            }
+        }
     }
 });
+
