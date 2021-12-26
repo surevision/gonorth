@@ -356,7 +356,10 @@ cc.Class({
                 // this.startGame();
                 this.player.active = true;
                 this.balls[0].node.active = true;
+                this._score = 0;
+                this._showScore = this._score;
                 cc.find("score", this.uiNode).active = true;
+                cc.find("score/data", this.uiNode).getComponent(cc.Label).string = this._score;
             });
             return;
         }
