@@ -153,6 +153,8 @@ cc.Class({
         }
         // 隐藏砖块
         if (other.node._coll_type == "brick") {
+            cc.soulbaka.game.increaseScore();
+            cc.soulbaka.game.showDrop(other.node.parent.convertToWorldSpaceAR(other.node.position));
             other.node.active = false;
             cc.soulbaka.game.checkWinLose();
         }

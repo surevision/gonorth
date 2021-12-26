@@ -15,7 +15,24 @@ cc.Class({
         game: {
             type: Game,
             default: null
-        }
+        },
+
+        // 奖励
+        itemSprites: {
+            type:[cc.Sprite],
+            default: []
+        },
+        // 箱子
+        boxSprites: {
+            type:[cc.Sprite],
+            default: []
+        },
+        // 掉落
+        dropSprites: {
+            type:[cc.Sprite],
+            default: []
+        },
+        
     },
 
     // LIFE-CYCLE CALLBACKS:
@@ -35,7 +52,7 @@ cc.Class({
         // 碰撞检测初始化
         let manager = cc.director.getCollisionManager();
         manager.enabled = true;
-        manager.enabledDebugDraw = true;
+        // manager.enabledDebugDraw = true;
     },
 
     start () {
